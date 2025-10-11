@@ -2,10 +2,26 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
-    "target": "es6",
+    "target": "ES2020", // Nâng từ es6 lên ES2020 cho hỗ trợ tốt hơn
+    "lib": [
+      "ES2020"
+    ], // Thêm lib để hỗ trợ ES features
     "sourceMap": true,
     "skipLibCheck": true,
-    "outDir": "dist" , 
+    "outDir": "dist",
     "rootDir": "src",
-  }
+    "strict": true, // Thêm: Strict mode cho type safety
+    "forceConsistentCasingInFileNames": true, // Thêm: Tránh lỗi casing
+    "resolveJsonModule": true, // Thêm: Import JSON nếu cần
+    "declaration": true, // Thêm: Tạo .d.ts files
+    "declarationMap": true, // Thêm: Source maps cho declarations
+    "moduleResolution": "node" // Thêm: Resolution cho Node.js
+  },
+  "include": [
+    "src/**/*.ts"
+  ], // Thêm: Chỉ compile files trong src/
+  "exclude": [
+    "node_modules",
+    "dist"
+  ] // Thêm: Bỏ qua node_modules và dist
 }

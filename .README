@@ -1,1 +1,18 @@
 dress-shop
+
+
+# BE
+# Cài TS và tools
+npm install --save-dev typescript @types/node @types/express @types/bcryptjs @types/jsonwebtoken @types/swagger-jsdoc @types/swagger-ui-express ts-node nodemon
+
+# Cài thêm types cho Sequelize (nếu chưa)
+npm install @types/sequelize
+
+# Các package runtime (nếu chưa từ trước)
+npm install express sequelize mysql2 bcryptjs jsonwebtoken swagger-jsdoc swagger-ui-express
+
+
+# FE
+# Cài TS và tools
+cd frontend
+npm install 
