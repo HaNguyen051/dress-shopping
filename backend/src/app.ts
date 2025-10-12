@@ -7,17 +7,23 @@ import swaggerUi from 'swagger-ui-express';
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(express.json());
 
+// Swagger config (giữ nguyên, TS hỗ trợ tốt)
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Dress Shopping API',
+            title: 'User API with JWT Auth (TypeScript)',
             version: '1.0.0',
-            description: 'Keep your registration forms simple. Optimize your conversions and let us determine the gender of your customers.',
+            description: 'API quản lý User với authentication JWT, viết bằng TypeScript',
         },
-        servers: [{ url: `http://localhost:${PORT}` }],
+        servers: [
+            {
+                url: `http://localhost:${PORT}`,
+            },
+        ],
         components: {
             securitySchemes: {
                 bearerAuth: {
@@ -29,26 +35,21 @@ const swaggerOptions = {
         },
         security: [{ bearerAuth: [] }],
     },
-    apis: ['./src/routes/*.ts'],
+    apis: ['./routes/*.ts'],  // Scan .ts files
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
+// Routes
 app.use('/api/users', userRoutes);
 
-// Chỉ test connection, KHÔNG sync
-sequelize.authenticate()
+// Sync DB và start server
+sequelize.sync({ force: false })
     .then(() => {
-        console.log('✓ Database connected successfully');
         app.listen(PORT, () => {
-            console.log(`✓ Server running on port ${PORT}`);
-            console.log(`✓ Swagger docs at http://localhost:${PORT}/api-docs`);
+            console.log(`Server running on port ${PORT}`);
+            console.log(`Swagger docs at http://localhost:${PORT}/api-docs`);
         });
     })
-    .catch((error: Error) => {
-        console.error('✗ Unable to connect to database:', error);
-        process.exit(1);
-    });
-
-export default app;
+    .catch((error: Error) => console.error('DB sync error:', error));
