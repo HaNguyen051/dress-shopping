@@ -1,15 +1,12 @@
-import { before } from "node:test";
-import { authorize } from "passport";
-import { DataTypes } from "sequelize";
-import { Model, Optional } from "sequelize";
-import bcrypt from "bcrypt";
+import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
+
 interface UserAttributes {
     id: number;
     fullName: string;
     email: string;
     password: string;
-    phone: number
+    phone: number;
     address: string;
     role?: 'admin' | 'user';
     createdAt?: Date;
@@ -21,7 +18,7 @@ export interface UserInstance extends Model<UserAttributes, Optional<UserAttribu
     fullName: string;
     email: string;
     password: string;
-    phone: number
+    phone: number;
     address: string;
     role: 'admin' | 'user';
     readonly createdAt: Date;
@@ -49,9 +46,6 @@ const User = sequelize.define<UserInstance>('User', {
     password: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        validate: {
-            len: [8, 100], // mat khau it nhat 8 ki tu
-        },
     },
     phone: {
         type: DataTypes.INTEGER,
@@ -69,27 +63,14 @@ const User = sequelize.define<UserInstance>('User', {
     createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW,
     },
     updatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW,
     },
 }, {
-    hooks: {
-        beforeCreate: async (user: UserAttributes) => {
-            // để hash password vào database
-            if (user.password) {
-                user.password = await bcrypt.hash(user.password, 10);
-            }
-        },
-        beforeUpdate: async (user: UserAttributes) => {
-            if (user.password) {
-                user.password = await bcrypt.hash(user.password, 10);
-            }
-        }
-    }
+    timestamps: true,
+    tableName: 'Users'
 });
 
 export default User;
