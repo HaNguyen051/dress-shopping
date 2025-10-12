@@ -58,11 +58,12 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
             return res.status(400).json({ message: 'Email already in use' });
         }
         // tao nguoi dung moi
+        const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await User.create(
             {
                 fullName,
                 email,
-                password,
+                password: hashedPassword,
                 phone,
                 address,
             }

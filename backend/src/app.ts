@@ -7,23 +7,17 @@ import swaggerUi from 'swagger-ui-express';
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(express.json());
 
-// Swagger config (giữ nguyên, TS hỗ trợ tốt)
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'User API with JWT Auth (TypeScript)',
+            title: 'Dress Shopping API',
             version: '1.0.0',
-            description: 'API quản lý User với authentication JWT, viết bằng TypeScript',
+            description: 'Keep your registration forms simple. Optimize your conversions and let us determine the gender of your customers.',
         },
-        servers: [
-            {
-                url: `http://localhost:${PORT}`,
-            },
-        ],
+        servers: [{ url: `http://localhost:${PORT}` }],
         components: {
             securitySchemes: {
                 bearerAuth: {
@@ -35,21 +29,26 @@ const swaggerOptions = {
         },
         security: [{ bearerAuth: [] }],
     },
-    apis: ['./routes/*.ts'],  // Scan .ts files
+    apis: ['./src/routes/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
-// Routes
 app.use('/api/users', userRoutes);
 
-// Sync DB và start server
-sequelize.sync({ force: false })
+// Chỉ test connection, KHÔNG sync
+sequelize.authenticate()
     .then(() => {
+        console.log('✓ Database connected successfully');
         app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-            console.log(`Swagger docs at http://localhost:${PORT}/api-docs`);
+            console.log(`✓ Server running on port ${PORT}`);
+            console.log(`✓ Swagger docs at http://localhost:${PORT}/api-docs`);
         });
     })
-    .catch((error: Error) => console.error('DB sync error:', error));
+    .catch((error: Error) => {
+        console.error('✗ Unable to connect to database:', error);
+        process.exit(1);
+    });
+
+export default app;

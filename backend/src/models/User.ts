@@ -37,7 +37,6 @@ const User = sequelize.define<UserInstance>('User', {
     fullName: {
         type: DataTypes.STRING(255),
         allowNull: false,
-
     },
     email: {
         type: DataTypes.STRING(255),
