@@ -14,8 +14,8 @@
     "forceConsistentCasingInFileNames": true, // Thêm: Tránh lỗi casing
     "resolveJsonModule": true, // Thêm: Import JSON nếu cần
     "declaration": true, // Thêm: Tạo .d.ts files
-    "declarationMap": true, // Thêm: Source maps cho declarations
-    "moduleResolution": "node" // Thêm: Resolution cho Node.js
+    "declarationMap": true,
+    // "moduleResolution": "node"
   },
   "include": [
     "src/**/*.ts"
