@@ -17,7 +17,8 @@ import auth, { isAdmin } from '../middleware/auth';
 
 const router: Router = Router();
 export default router;
-
+import dotenv from 'dotenv';
+dotenv.config();
 
 
 /**
