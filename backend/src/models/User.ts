@@ -1,16 +1,23 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import sequelize from "../config/database";
 
+
 interface UserAttributes {
     id: number;
     fullName: string;
     email: string;
     password: string;
-    phone: number;
+    phone: string;
     address: string;
     role?: 'admin' | 'user';
+    isEmailVerified?: boolean;
+    emailVerificationToken?: string | null;
+    emailVerificationTokenExpiry?: Date | null;
+    passwordResetToken?: string | null;
+    passwordResetTokenExpiry?: Date | null;
     createdAt?: Date;
-    updatedAt?: Date;
+
+
 }
 
 export interface UserInstance extends Model<UserAttributes, Optional<UserAttributes, "id">> {
@@ -18,11 +25,16 @@ export interface UserInstance extends Model<UserAttributes, Optional<UserAttribu
     fullName: string;
     email: string;
     password: string;
-    phone: number;
+    phone: string;
     address: string;
     role: 'admin' | 'user';
+    isEmailVerified?: boolean;
+    emailVerificationToken?: string | null;
+    emailVerificationTokenExpiry?: Date | null;
+    passwordResetToken?: string | null;
+    passwordResetTokenExpiry?: Date | null;
     readonly createdAt: Date;
-    readonly updatedAt: Date;
+
 }
 
 const User = sequelize.define<UserInstance>('User', {
@@ -48,8 +60,9 @@ const User = sequelize.define<UserInstance>('User', {
         allowNull: false,
     },
     phone: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING(20),
         allowNull: false,
+
     },
     address: {
         type: DataTypes.STRING(255),
@@ -60,11 +73,28 @@ const User = sequelize.define<UserInstance>('User', {
         allowNull: false,
         defaultValue: 'user',
     },
-    createdAt: {
-        type: DataTypes.DATE,
+    isEmailVerified: {
+        type: DataTypes.BOOLEAN,
         allowNull: false,
+        defaultValue: false,
     },
-    updatedAt: {
+    emailVerificationToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    emailVerificationTokenExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    passwordResetToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    passwordResetTokenExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true,
+    },
+    createdAt: {
         type: DataTypes.DATE,
         allowNull: false,
     },

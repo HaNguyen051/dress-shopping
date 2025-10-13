@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Swagger definition
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -24,20 +25,33 @@ const swaggerOptions = {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                },
+                    description: 'Enter your JWT token in the format: Bearer <token>'
+                }
             },
         },
-        security: [{ bearerAuth: [] }],
+
     },
     apis: ['./src/routes/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+
+const swaggerUiOptions = {
+    swaggerOptions: {
+        persistAuthorization: false, // Không lưu token khi refresh page
+        displayRequestDuration: true,
+        docExpansion: 'none',
+        filter: true,
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Dress Shopping API'
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 app.use('/api/users', userRoutes);
 
-// Chỉ test connection, KHÔNG sync
 sequelize.authenticate()
     .then(() => {
         console.log('✓ Database connected successfully');
@@ -50,5 +64,11 @@ sequelize.authenticate()
         console.error('✗ Unable to connect to database:', error);
         process.exit(1);
     });
-
+sequelize.sync({ alter: true })  // Update schema theo model mới
+    .then(() => {
+        console.log('DB synced! Bảng Users updated theo model.');
+        app.listen(5000, () => console.log('Server on 5000'));
+    })
+    .catch(err => console.error('Sync error:', err));
 export default app;
+
