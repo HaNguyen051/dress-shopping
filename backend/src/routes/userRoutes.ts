@@ -50,7 +50,7 @@ export default router;
  *                 example: "password123"
  *               phone:
  *                 type: integer
- *                 example: 987654321
+ *                 example: "987654321"
  *               address:
  *                 type: string
  *                 example: "123 Nguyen Trai, Ha Noi"

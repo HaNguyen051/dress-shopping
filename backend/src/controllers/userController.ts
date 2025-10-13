@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { isEmailVerified } from '../middleware/auth';
 import { AuthRequest } from '../types';
 import dotenv from 'dotenv';
+import { sendVerificationEmail } from '../services/emailService';
 dotenv.config()
 
 interface LoginRequest {
@@ -181,6 +182,7 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
                 isEmailVerified: false,
             }
         );
+        await sendVerificationEmail(email, verificationToken);
         const accessToken = generateAccessToken(newUser.id);
         const refreshToken = generateRefreshToken(newUser.id);
         res.status(200).json({
