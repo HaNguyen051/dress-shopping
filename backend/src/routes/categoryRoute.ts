@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { Router } from 'express';
-import { createProduct, deleteProduct, getAllProducts, getProductById, updateProduct } from '../controllers/productController';
+import { createCategory, deleteCategory, getAllCategories, getCategoryById, updateCategory } from '../controllers/categoryController';
 
 const router: Router = Router();
 export default router;
@@ -8,14 +8,14 @@ dotenv.config();
 
 /**
  * @swagger
- * /api/products:
+ * /api/categories:
  *   get:
- *     summary: Get all products
- *     tags: [Products]
+ *     summary: Get all categories
+ *     tags: [Categories]
  *     security: []
  *     responses:
  *       200:
- *         description: Successfully retrieved all products
+ *         description: Successfully retrieved all categories
  *         content:
  *           application/json:
  *             schema:
@@ -27,19 +27,18 @@ dotenv.config();
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Product'
+ *                     $ref: '#/components/schemas/Category'
  *       500:
  *         description: Server error
  */
-router.get('/', getAllProducts);
-
+router.get('/', getAllCategories);
 
 /**
  * @swagger
- * /api/products:
+ * /api/categories:
  *   post:
- *     summary: Create a new product
- *     tags: [Products]
+ *     summary: Create a new category
+ *     tags: [Categories]
  *     security: []
  *     requestBody:
  *       required: true
@@ -49,30 +48,16 @@ router.get('/', getAllProducts);
  *             type: object
  *             required:
  *               - Name
- *               - Price
- *               - Stock
  *             properties:
  *               Name:
  *                 type: string
- *                 example: "Sample Product"
+ *                 example: "Sample Category"
  *               Description:
  *                 type: string
- *                 example: "This is a sample product description."
- *               Price:
- *                 type: number
- *                 example: 99.99
- *               Stock:
- *                 type: integer
- *                 example: 100
- *               ImageUrl:
- *                 type: string
- *                 example: "https://example.com/image.jpg"
- *               CategoryId:
- *                 type: integer
- *                 example: 1
+ *                 example: "This is a sample category description."
  *     responses:
  *       201:
- *         description: Product created successfully
+ *         description: Category created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -82,20 +67,20 @@ router.get('/', getAllProducts);
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Product'
+ *                   $ref: '#/components/schemas/Category'
  *       400:
- *         description: Error creating product
+ *         description: Error creating category
  *       500:
  *         description: Server error
  */
-router.post('/', createProduct);
+router.post('/', createCategory);
 
 /**
  * @swagger
- * /api/products/{id}:
+ * /api/categories/{id}:
  *   get:
- *     summary: Get a product by ID
- *     tags: [Products]
+ *     summary: Get a category by ID
+ *     tags: [Categories]
  *     security: []
  *     parameters:
  *       - in: path
@@ -103,10 +88,10 @@ router.post('/', createProduct);
  *         required: true
  *         schema:
  *           type: integer
- *         description: Product ID
+ *         description: Category ID
  *     responses:
  *       200:
- *         description: Successfully retrieved product
+ *         description: Successfully retrieved category
  *         content:
  *           application/json:
  *             schema:
@@ -116,19 +101,20 @@ router.post('/', createProduct);
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Product'
+ *                   $ref: '#/components/schemas/Category'
  *       404:
- *         description: Product not found
+ *         description: Category not found
  *       500:
  *         description: Server error
  */
-router.get('/:id', getProductById);
+router.get('/:id', getCategoryById);
+
 /**
  * @swagger
- * /api/products/{id}:
+ * /api/categories/{id}:
  *   put:
- *     summary: Update a product by ID
- *     tags: [Products]
+ *     summary: Update a category by ID
+ *     tags: [Categories]
  *     security: []
  *     parameters:
  *       - in: path
@@ -136,7 +122,7 @@ router.get('/:id', getProductById);
  *         required: true
  *         schema:
  *           type: integer
- *         description: Product ID
+ *         description: Category ID
  *     requestBody:
  *       required: true
  *       content:
@@ -146,25 +132,13 @@ router.get('/:id', getProductById);
  *             properties:
  *               Name:
  *                 type: string
- *                 example: "Updated Product Name"
+ *                 example: "Updated Category Name"
  *               Description:
  *                 type: string
  *                 example: "Updated description."
- *               Price:
- *                 type: number
- *                 example: 149.99
- *               Stock:
- *                 type: integer
- *                 example: 50
- *               ImageUrl:
- *                 type: string
- *                 example: "https://example.com/updated-image.jpg"
- *               CategoryId:
- *                 type: integer
- *                 example: 2
  *     responses:
  *       200:
- *         description: Product updated successfully
+ *         description: Category updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -174,21 +148,22 @@ router.get('/:id', getProductById);
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Product'
+ *                   $ref: '#/components/schemas/Category'
  *       400:
- *         description: Error updating product
+ *         description: Error updating category
  *       404:
- *         description: Product not found
+ *         description: Category not found
  *       500:
  *         description: Server error
  */
-router.put('/:id', updateProduct);
+router.put('/:id', updateCategory);
+
 /**
  * @swagger
- * /api/products/{id}:
+ * /api/categories/{id}:
  *   delete:
- *     summary: Delete a product by ID
- *     tags: [Products]
+ *     summary: Delete a category by ID
+ *     tags: [Categories]
  *     security: []
  *     parameters:
  *       - in: path
@@ -196,10 +171,10 @@ router.put('/:id', updateProduct);
  *         required: true
  *         schema:
  *           type: integer
- *         description: Product ID
+ *         description: Category ID
  *     responses:
  *       200:
- *         description: Product deleted successfully
+ *         description: Category deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -210,10 +185,10 @@ router.put('/:id', updateProduct);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Product deleted successfully"
+ *                   example: "Category deleted successfully"
  *       404:
- *         description: Product not found
+ *         description: Category not found
  *       500:
  *         description: Server error
  */
-router.delete('/:id', deleteProduct);
+router.delete('/:id', deleteCategory);
