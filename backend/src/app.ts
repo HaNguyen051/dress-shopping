@@ -1,8 +1,8 @@
 import express, { Application } from 'express';
-import sequelize from './config/database';
-import userRoutes from './routes/userRoutes';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { sequelize } from './models'; // Import từ models/index.ts
+import userRoutes from './routes/userRoutes';
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -29,7 +29,6 @@ const swaggerOptions = {
                 }
             },
         },
-
         security: [
             {
                 bearerAuth: []
@@ -43,11 +42,10 @@ const specs = swaggerJsdoc(swaggerOptions);
 
 const swaggerUiOptions = {
     swaggerOptions: {
-        persistAuthorization: true, // Lưu token để test tiện hơn
+        persistAuthorization: true,
         displayRequestDuration: true,
         docExpansion: 'none',
         filter: true,
-        // Tự động thêm Bearer prefix khi gửi request
         requestInterceptor: (req: any) => {
             if (req.headers.Authorization && !req.headers.Authorization.startsWith('Bearer ')) {
                 req.headers.Authorization = `Bearer ${req.headers.Authorization}`;
@@ -61,25 +59,34 @@ const swaggerUiOptions = {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
+// Routes
 app.use('/api/users', userRoutes);
 
-sequelize.authenticate()
-    .then(() => {
+// Start server function
+const startServer = async () => {
+    try {
+        // Test database connection
+        await sequelize.authenticate();
         console.log('✓ Database connected successfully');
+
+        // Sync all models with database
+        // Sử dụng { alter: true } để update schema mà không mất data
+        // Sử dụng { force: true } nếu muốn xóa và tạo lại tables (CHÚ Ý: sẽ mất hết data)
+        await sequelize.sync({ alter: true });
+        console.log('✓ All models synchronized successfully');
+
+        // Start listening
         app.listen(PORT, () => {
             console.log(`✓ Server running on port ${PORT}`);
             console.log(`✓ Swagger docs at http://localhost:${PORT}/api-docs`);
         });
-    })
-    .catch((error: Error) => {
-        console.error('✗ Unable to connect to database:', error);
+    } catch (error) {
+        console.error('✗ Unable to start server:', error);
         process.exit(1);
-    });
+    }
+};
 
-sequelize.sync({ alter: true })
-    .then(() => {
-        console.log('DB synced! Bảng Users updated theo model.');
-    })
-    .catch(err => console.error('Sync error:', err));
+// Start the server
+startServer();
 
 export default app;
