@@ -186,12 +186,7 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
         const accessToken = generateAccessToken(newUser.id);
         const refreshToken = generateRefreshToken(newUser.id);
         res.status(200).json({
-            user: {
-                id: newUser.id,
-                fullName: newUser.fullName,
-                email: newUser.email,
-                isEmailVerified: newUser.isEmailVerified,
-            }, accessToken, refreshToken, message: 'User registered successfully. Please verify your email.'
+            accessToken, refreshToken, message: 'User registered successfully. Please verify your email.'
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -211,12 +206,7 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) =
         const accessToken = generateAccessToken(user.id);
         const refreshToken = generateRefreshToken(user.id);
         res.json({
-            user: {
-                id: user.id,
-                name: user.fullName,
-                email: user.email,
-                isEmailVerified: user.isEmailVerified
-            }, accessToken, refreshToken
+            accessToken, refreshToken, message: 'User login successfully'
         });
     } catch (error) {
         console.error('Login error:   ', error);

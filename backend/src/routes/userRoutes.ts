@@ -11,7 +11,6 @@ import {
     changePassword,
     resendVerification,
     updateUser,
-
 } from '../controllers/userController';
 import auth, { isAdmin } from '../middleware/auth';
 
@@ -20,13 +19,13 @@ export default router;
 import dotenv from 'dotenv';
 dotenv.config();
 
-
 /**
  * @swagger
  * /api/users/register:
  *   post:
  *     summary: Register a new user
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -50,7 +49,7 @@ dotenv.config();
  *                 type: string
  *                 example: "password123"
  *               phone:
- *                 type: integer
+ *                 type: string
  *                 example: "987654321"
  *               address:
  *                 type: string
@@ -71,6 +70,7 @@ router.post('/register', register);
  *   post:
  *     summary: Login user
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -90,17 +90,6 @@ router.post('/register', register);
  *     responses:
  *       200:
  *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 user:
- *                   type: object
- *                 accessToken:
- *                   type: string
- *                 refreshToken:
- *                   type: string
  *       401:
  *         description: Invalid credentials
  *       500:
@@ -114,6 +103,7 @@ router.post('/login', login);
  *   post:
  *     summary: Refresh access token using refresh token
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -140,6 +130,7 @@ router.post('/refresh-token', refreshToken);
  *   post:
  *     summary: Request password reset
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -164,6 +155,7 @@ router.post('/forgot-password', forgotPassword);
  *   post:
  *     summary: Reset password with token
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -171,10 +163,10 @@ router.post('/forgot-password', forgotPassword);
  *           schema:
  *             type: object
  *             required:
- *               - resetToken
+ *               - token
  *               - newPassword
  *             properties:
- *               resetToken:
+ *               token:
  *                 type: string
  *                 example: "abc123def456..."
  *               newPassword:
@@ -194,6 +186,7 @@ router.post('/reset-password', resetPassword);
  *   post:
  *     summary: Verify email with token
  *     tags: [Users]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -261,6 +254,8 @@ router.put('/change-password', auth as RequestHandler, changePassword as Request
  *         description: Verification email sent
  *       400:
  *         description: Email already verified
+ *       401:
+ *         description: Unauthorized - Please login first
  */
 router.post('/resend-verification', auth as RequestHandler, resendVerification as RequestHandler);
 
@@ -281,6 +276,8 @@ router.post('/resend-verification', auth as RequestHandler, resendVerification a
  *     responses:
  *       200:
  *         description: User found
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: User not found
  */
@@ -297,6 +294,8 @@ router.get('/:id', auth as RequestHandler, getUserById as RequestHandler);
  *     responses:
  *       200:
  *         description: List of all users
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Admin access required
  */
@@ -316,9 +315,24 @@ router.get('/', auth as RequestHandler, isAdmin as RequestHandler, getAllUsers a
  *         required: true
  *         schema:
  *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
  *     responses:
  *       200:
  *         description: User updated
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Not authorized
  *       404:
@@ -343,9 +357,11 @@ router.put('/:id', auth as RequestHandler, updateUser as RequestHandler);
  *     responses:
  *       200:
  *         description: User deleted
+ *       401:
+ *         description: Unauthorized
  *       403:
  *         description: Not authorized
  *       404:
  *         description: User not found
  */
-router
+router.delete('/:id', auth as RequestHandler);

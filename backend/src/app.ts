@@ -25,24 +25,35 @@ const swaggerOptions = {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                    description: 'Enter your JWT token in the format: Bearer <token>'
+                    description: 'Enter your JWT token (without "Bearer" prefix)'
                 }
             },
         },
-
+        // QUAN TRỌNG: Thêm security global để mặc định tất cả endpoint đều khóa
+        security: [
+            {
+                bearerAuth: []
+            }
+        ]
     },
     apis: ['./src/routes/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 
-
 const swaggerUiOptions = {
     swaggerOptions: {
-        persistAuthorization: false, // Không lưu token khi refresh page
+        persistAuthorization: true, // Lưu token để test tiện hơn
         displayRequestDuration: true,
         docExpansion: 'none',
         filter: true,
+        // Tự động thêm Bearer prefix khi gửi request
+        requestInterceptor: (req: any) => {
+            if (req.headers.Authorization && !req.headers.Authorization.startsWith('Bearer ')) {
+                req.headers.Authorization = `Bearer ${req.headers.Authorization}`;
+            }
+            return req;
+        }
     },
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'Dress Shopping API'
@@ -64,11 +75,11 @@ sequelize.authenticate()
         console.error('✗ Unable to connect to database:', error);
         process.exit(1);
     });
-sequelize.sync({ alter: true })  // Update schema theo model mới
+
+sequelize.sync({ alter: true })
     .then(() => {
         console.log('DB synced! Bảng Users updated theo model.');
-        app.listen(5000, () => console.log('Server on 5000'));
     })
     .catch(err => console.error('Sync error:', err));
-export default app;
 
+export default app;
