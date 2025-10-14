@@ -29,7 +29,7 @@ const swaggerOptions = {
                 }
             },
         },
-        // QUAN TRỌNG: Thêm security global để mặc định tất cả endpoint đều khóa
+
         security: [
             {
                 bearerAuth: []
