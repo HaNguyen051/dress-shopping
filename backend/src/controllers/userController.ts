@@ -1,12 +1,13 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
-import User, { UserInstance } from '../models/User';
+
 import crypto from 'crypto';
 import { isEmailVerified } from '../middleware/auth';
 import { AuthRequest } from '../types';
 import dotenv from 'dotenv';
 import { sendVerificationEmail } from '../services/emailService';
+import { User } from '../models';
 dotenv.config()
 
 interface LoginRequest {
@@ -145,8 +146,7 @@ export const forgotPassword = async (req: Request<{}, {}, ResetPasswordRequest>,
             passwordResetTokenExpiry: resetExpires
         });
 
-        // TODO: Send reset email with token
-        // sendResetPasswordEmail(email, resetToken);
+
 
         res.json({
             message: 'If the email exists, a reset link will be sent',

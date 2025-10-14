@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "sequelize-typescript-model-migration": "^1.0.13",
+    "tsx": "^4.20.6"
+  }
+}

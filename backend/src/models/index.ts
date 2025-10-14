@@ -12,12 +12,12 @@ const setupAssociations = () => {
     // User - CartItem
     User.hasMany(CartItem, {
         foreignKey: 'UserId',
-        sourceKey: 'id', // ← User dùng 'id' làm primary key
+        sourceKey: 'id',
         as: 'cartItems'
     });
     CartItem.belongsTo(User, {
         foreignKey: 'UserId',
-        targetKey: 'id', // ← User dùng 'id' làm primary key
+        targetKey: 'id',
         as: 'user'
     });
 
