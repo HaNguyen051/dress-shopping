@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Swagger definition
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -24,20 +25,44 @@ const swaggerOptions = {
                     type: 'http',
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
-                },
+                    description: 'Enter your JWT token (without "Bearer" prefix)'
+                }
             },
         },
-        security: [{ bearerAuth: [] }],
+
+        security: [
+            {
+                bearerAuth: []
+            }
+        ]
     },
     apis: ['./src/routes/*.ts'],
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+const swaggerUiOptions = {
+    swaggerOptions: {
+        persistAuthorization: true, // Lưu token để test tiện hơn
+        displayRequestDuration: true,
+        docExpansion: 'none',
+        filter: true,
+        // Tự động thêm Bearer prefix khi gửi request
+        requestInterceptor: (req: any) => {
+            if (req.headers.Authorization && !req.headers.Authorization.startsWith('Bearer ')) {
+                req.headers.Authorization = `Bearer ${req.headers.Authorization}`;
+            }
+            return req;
+        }
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Dress Shopping API'
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 app.use('/api/users', userRoutes);
 
-// Chỉ test connection, KHÔNG sync
 sequelize.authenticate()
     .then(() => {
         console.log('✓ Database connected successfully');
@@ -50,5 +75,11 @@ sequelize.authenticate()
         console.error('✗ Unable to connect to database:', error);
         process.exit(1);
     });
+
+sequelize.sync({ alter: true })
+    .then(() => {
+        console.log('DB synced! Bảng Users updated theo model.');
+    })
+    .catch(err => console.error('Sync error:', err));
 
 export default app;

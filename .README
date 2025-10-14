@@ -10,6 +10,8 @@ npm install @types/sequelize
 
 # Các package runtime (nếu chưa từ trước)
 npm install express sequelize mysql2 bcryptjs jsonwebtoken swagger-jsdoc swagger-ui-express
+# sử dụng emailService de gửi email
+npm install nodemailer 
 
 
 # FE
