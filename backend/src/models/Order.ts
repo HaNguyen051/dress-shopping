@@ -13,7 +13,7 @@ interface OrderCreationAttributes extends Optional<OrderAttributes, 'OrderId' | 
 
 class Order extends Model<OrderAttributes, OrderCreationAttributes> implements OrderAttributes {
     public OrderId!: number;
-    public UserId!: number; // ← Đổi từ string sang number
+    public UserId!: number;
     public TotalAmount!: number;
     public OrderStatus!: string;
     public CreatedAt!: Date;
