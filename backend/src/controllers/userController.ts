@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { isEmailVerified } from '../middleware/auth';
 import { AuthRequest } from '../types';
 import dotenv from 'dotenv';
-import { sendVerificationEmail } from '../services/emailService';
+import { sendPasswordResetSuccessEmail, sendResetPasswordEmail, sendVerificationEmail } from '../services/emailService';
 import { User } from '../models';
 dotenv.config()
 
@@ -44,6 +44,24 @@ interface ConfirmResetPasswordRequest {
     newPassword: string;
     confirmPassword: string;
 }
+// valadator 
+const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+const validatePassword = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 6) {
+        return { valid: false, message: 'Password must be at least 6 characters' };
+    }
+    return { valid: true };
+};
+
+const validatePhone = (phone: string): boolean => {
+    const phoneRegex = /^[0-9]{10,11}$/;
+    return phoneRegex.test(phone);
+};
+
 const generateAccessToken = (userId: number) => {
     return jwt.sign({ id: userId, type: 'access' }, process.env.JWT_SECRET!, { expiresIn: '15m' });
 }
@@ -56,6 +74,7 @@ const generateResetToken = (): string => {
 const generateEmailVerificationToken = (): string => {
     return crypto.randomBytes(32).toString('hex');
 }
+
 // POST /api/users/refresh-token
 export const refreshToken = async (req: Request<{}, {}, RefreshTokenRequest>, res: Response) => {
     try {
@@ -92,6 +111,7 @@ export const refreshToken = async (req: Request<{}, {}, RefreshTokenRequest>, re
     }
 };
 
+// POST /api/users/change-password
 export const changePassword = async (req: AuthRequest, res: Response) => {
     try {
         const { oldPassword, newPassword } = req.body as ChangePasswordRequest;
@@ -127,6 +147,8 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// POST /api/users/forgot-password
 export const forgotPassword = async (req: Request<{}, {}, ResetPasswordRequest>, res: Response) => {
     try {
         const { email } = req.body;
@@ -158,35 +180,89 @@ export const forgotPassword = async (req: Request<{}, {}, ResetPasswordRequest>,
         res.status(500).json({ message: 'Server error' });
     }
 };
+
 // PORT / api/users/register
 export const register = async (req: Request<{}, {}, RegisterRequest>, res: Response) => {
     try {
         const { fullName, email, password, phone, address } = req.body;
-        // kiem tra email da ton tai chua trong database 
+
+        // Validate input
+        if (!fullName || !email || !password || !phone || !address) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        if (!validateEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
+            });
+        }
+
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.valid) {
+            return res.status(400).json({
+                success: false,
+                message: passwordValidation.message
+            });
+        }
+
+        if (!validatePhone(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Phone number must be 10-11 digits'
+            });
+        }
+
+        // Check if user exists
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
-            return res.status(400).json({ message: 'Email already in use' });
+            return res.status(400).json({
+                success: false,
+                message: 'Email already in use'
+            });
         }
-        // tao nguoi dung moi
+
+        // Create new user
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = generateEmailVerificationToken();
-        const newUser = await User.create(
-            {
-                fullName,
-                email,
-                password: hashedPassword,
-                phone,
-                address,
-                emailVerificationToken: verificationToken,
-                emailVerificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
-                isEmailVerified: false,
-            }
-        );
-        await sendVerificationEmail(email, verificationToken);
+
+        const newUser = await User.create({
+            fullName,
+            email,
+            password: hashedPassword,
+            phone,
+            address,
+            emailVerificationToken: verificationToken,
+            emailVerificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            isEmailVerified: false,
+        });
+
+        // Send verification email
+        try {
+            await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+            console.error('Failed to send verification email:', emailError);
+            // Don't block registration if email fails
+        }
+
+        // Generate tokens
         const accessToken = generateAccessToken(newUser.id);
         const refreshToken = generateRefreshToken(newUser.id);
-        res.status(200).json({
-            accessToken, refreshToken, message: 'User registered successfully. Please verify your email.'
+
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully. Please verify your email.',
+            accessToken,
+            refreshToken,
+            user: {
+                id: newUser.id,
+                fullName: newUser.fullName,
+                email: newUser.email,
+                isEmailVerified: newUser.isEmailVerified
+            }
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -199,14 +275,51 @@ export const register = async (req: Request<{}, {}, RegisterRequest>, res: Respo
 export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ where: { email } });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ message: 'Invalid email or password' });
+
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
         }
-        const accessToken = generateAccessToken(user.id);
-        const refreshToken = generateRefreshToken(user.id);
+
+        // Find user
+        const user = await User.findOne({ where: { email } });
+
+        // Don't reveal if user exists for security
+        if (!user) {
+            return res.json({
+                success: true,
+                message: 'If the email exists, a reset link will be sent'
+            });
+        }
+
+        // Generate reset token
+        const resetToken = generateResetToken();
+        const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        await user.update({
+            passwordResetToken: resetToken,
+            passwordResetTokenExpiry: resetExpires
+        });
+
+        // Send reset email
+        try {
+            await sendResetPasswordEmail(email, resetToken);
+        } catch (emailError) {
+            console.error('Failed to send reset password email:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send reset email'
+            });
+        }
+
         res.json({
-            accessToken, refreshToken, message: 'User login successfully'
+            success: true,
+            message: 'If the email exists, a reset link will be sent',
+            // Only for development testing
+            resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
         });
     } catch (error) {
         console.error('Login error:   ', error);
@@ -215,21 +328,41 @@ export const login = async (req: Request<{}, {}, LoginRequest>, res: Response) =
 }
 export const resetPassword = async (req: Request<{}, {}, ConfirmResetPasswordRequest>, res: Response) => {
     try {
-        const { token, newPassword } = req.body;
+        const { token, newPassword, confirmPassword } = req.body;
 
+        // Validate input
+        if (!token || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token and new password are required'
+            });
+        }
+
+        if (confirmPassword && newPassword !== confirmPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Passwords do not match'
+            });
+        }
+
+        const passwordValidation = validatePassword(newPassword);
+        if (!passwordValidation.valid) {
+            return res.status(400).json({
+                success: false,
+                message: passwordValidation.message
+            });
+        }
+
+        // Find user with valid token
         const user = await User.findOne({
-            where: {
-                passwordResetToken: token
-            }
+            where: { passwordResetToken: token }
         });
 
         if (!user || !user.passwordResetTokenExpiry || user.passwordResetTokenExpiry < new Date()) {
-            return res.status(400).json({ message: 'Invalid or expired reset token' });
-        }
-
-        // Validate new password
-        if (newPassword.length < 6) {
-            return res.status(400).json({ message: 'Password must be at least 6 characters' });
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired reset token'
+            });
         }
 
         // Hash and update password
@@ -240,10 +373,23 @@ export const resetPassword = async (req: Request<{}, {}, ConfirmResetPasswordReq
             passwordResetTokenExpiry: null
         });
 
-        res.json({ message: 'Password has been reset successfully' });
+        // Send success notification email
+        try {
+            await sendPasswordResetSuccessEmail(user.email, user.fullName);
+        } catch (emailError) {
+            console.error('Failed to send password reset success email:', emailError);
+        }
+
+        res.json({
+            success: true,
+            message: 'Password has been reset successfully'
+        });
     } catch (error) {
         console.error('Reset password error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
     }
 };
 export const verifyEmail = async (req: Request<{}, {}, VerifyEmailRequest>, res: Response) => {
@@ -338,21 +484,65 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
 // PUT / api/users/updateUser
 export const updateUser = async (req: AuthRequest, res: Response) => {
     try {
-        const user = await User.findByPk(req.params.id);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        if (req.user?.id !== user.id) {
-            return res.status(403).json({ error: 'Not authorized' });
+        const userId = req.params.id;
+        const { fullName, phone, address } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
+            });
         }
 
-        await user.update(req.body);
+        const user = await User.findByPk(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Check authorization (user can only update their own profile, unless admin)
+        if (req.user?.id !== user.id && req.user?.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to update this user'
+            });
+        }
+
+        // Validate phone if provided
+        if (phone && !validatePhone(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid phone number format'
+            });
+        }
+
+        // Update allowed fields only
+        const updateData: any = {};
+        if (fullName) updateData.fullName = fullName;
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
+
+        await user.update(updateData);
+
         res.json({
-            message: 'User updated',
-            user: { id: user.id, name: user.fullName, email: user.email }
+            success: true,
+            message: 'User updated successfully',
+            data: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                phone: user.phone,
+                address: user.address
+            }
         });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
     }
 };
 
@@ -375,6 +565,102 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     }
 };
 
-//
+//profile
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.params.id; // Lấy từ JWT middleware
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Không tìm thấy thông tin user'
+            });
+            return;
+        }
+
+        const user = await User.findByPk(userId, {
+            attributes: {
+                exclude: ['password', 'passwordResetToken', 'passwordResetTokenExpiry',
+                    'emailVerificationToken', 'emailVerificationTokenExpiry']
+            }
+        });
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy user'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Lấy thông tin profile thành công',
+            data: user
+        });
+    } catch (error) {
+        console.error('Error getting profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi lấy thông tin profile'
+        });
+    }
+};
 
 
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.params.id;
+        const { fullName, phone, address, avatar, bio, dateOfBirth } = req.body;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Không tìm thấy thông tin user'
+            });
+            return;
+        }
+
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy user'
+            });
+            return;
+        }
+
+        // Cập nhật các trường được phép
+        const updateData: any = {};
+        if (fullName) updateData.fullName = fullName;
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
+        if (avatar) updateData.avatar = avatar;
+        if (bio) updateData.bio = bio;
+        if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
+        updateData.updatedAt = new Date();
+
+        await user.update(updateData);
+
+        // Lấy lại thông tin user sau khi update (không trả về password)
+        const updatedUser = await User.findByPk(userId, {
+            attributes: {
+                exclude: ['password', 'passwordResetToken', 'passwordResetTokenExpiry',
+                    'emailVerificationToken', 'emailVerificationTokenExpiry']
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Cập nhật profile thành công',
+            data: updatedUser
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi cập nhật profile'
+        });
+    }
+};

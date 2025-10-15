@@ -11,6 +11,8 @@ import {
     changePassword,
     resendVerification,
     updateUser,
+    updateProfile,
+    getProfile,
 } from '../controllers/userController';
 import auth, { isAdmin } from '../middleware/auth';
 
@@ -18,6 +20,42 @@ const router: Router = Router();
 export default router;
 import dotenv from 'dotenv';
 dotenv.config();
+
+import rateLimit from 'express-rate-limit';
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Max 5 requests per window
+    message: {
+        success: false,
+        message: 'Too many attempts, please try again later'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate limit for password operations
+const passwordLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // Max 3 password change attempts per hour
+    message: {
+        success: false,
+        message: 'Too many password change attempts, please try again later'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// General API rate limiter
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Max 100 requests per window
+    message: {
+        success: false,
+        message: 'Too many requests, please try again later'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 /**
  * @swagger
@@ -365,3 +403,97 @@ router.put('/:id', auth as RequestHandler, updateUser as RequestHandler);
  *         description: User not found
  */
 router.delete('/:id', auth as RequestHandler);
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user profile (requires authentication)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - User information not found
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id', auth as RequestHandler, getProfile as RequestHandler);
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Update user profile (requires authentication)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: User profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - User information not found
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+router.put('/:id', auth as RequestHandler, updateProfile as RequestHandler);
